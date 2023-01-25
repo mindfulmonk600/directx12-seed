@@ -342,6 +342,8 @@ void Renderer::initializeResources()
     {
         ID3DBlob* vertexShader = nullptr;
         ID3DBlob* pixelShader = nullptr;
+        ID3DBlob* hullShader = nullptr;
+        ID3DBlob* domainShader = nullptr;
         ID3DBlob* errors = nullptr;
 
 #if defined(_DEBUG)
@@ -359,14 +361,20 @@ void Renderer::initializeResources()
         path += "\\";
         std::wstring wpath = std::wstring(path.begin(), path.end());
 
-        std::string vertCompiledPath = path, fragCompiledPath = path;
+        //std::string vertCompiledPath = path, fragCompiledPath = path;
+        std::string vertCompiledPath = path, fragCompiledPath, hullCompiledPath,
+                    domainCompiledPath = path;
         vertCompiledPath += "assets\\triangle.vert.dxbc";
         fragCompiledPath += "assets\\triangle.frag.dxbc";
+        hullCompiledPath += "assets\\triangle.hull.dxbc";
+        domainCompiledPath += "assets\\triangle.domain.dxbc";
 
 #define COMPILESHADERS
 #ifdef COMPILESHADERS
         std::wstring vertPath = wpath + L"assets\\triangle.vert.hlsl";
         std::wstring fragPath = wpath + L"assets\\triangle.frag.hlsl";
+        std::wstring hullPath = wpath + L"assets\\triangle.hull.hlsl";
+        std::wstring domainPath = wpath + L"assets\\triangle.domain.hlsl";
 
         try
         {
@@ -376,6 +384,12 @@ void Renderer::initializeResources()
             ThrowIfFailed(D3DCompileFromFile(fragPath.c_str(), nullptr, nullptr,
                                              "main", "ps_5_0", compileFlags, 0,
                                              &pixelShader, &errors));
+            //ThrowIfFailed(D3DCompileFromFile(hullPath.c_str(), nullptr, nullptr,
+            //                                 "main", "hs_5_0", compileFlags, 0,
+            //                                 &hullShader, &errors));
+            //ThrowIfFailed(D3DCompileFromFile(domainPath.c_str(), nullptr, nullptr,
+            //                                 "main", "ds_5_0", compileFlags, 0,
+            //                                 &domainShader, &errors));
         }
         catch (std::exception e)
         {
@@ -385,13 +399,21 @@ void Renderer::initializeResources()
             errors = nullptr;
         }
 
+        //std::ofstream vsOut(vertCompiledPath, std::ios::out | std::ios::binary),
+        //    fsOut(fragCompiledPath, std::ios::out | std::ios::binary);
         std::ofstream vsOut(vertCompiledPath, std::ios::out | std::ios::binary),
-            fsOut(fragCompiledPath, std::ios::out | std::ios::binary);
+            fsOut(fragCompiledPath, std::ios::out | std::ios::binary),
+            hsOut(hullCompiledPath, std::ios::out | std::ios::binary),
+            dsOut(domainCompiledPath, std::ios::out | std::ios::binary);
 
         vsOut.write((const char*)vertexShader->GetBufferPointer(),
                     vertexShader->GetBufferSize());
         fsOut.write((const char*)pixelShader->GetBufferPointer(),
                     pixelShader->GetBufferSize());
+        //hsOut.write((const char*)hullShader->GetBufferPointer(),
+        //            hullShader->GetBufferSize());
+        //dsOut.write((const char*)domainShader->GetBufferPointer(),
+        //            domainShader->GetBufferSize());
 
 #else
         std::vector<char> vsBytecodeData = readFile(vertCompiledPath);
@@ -481,6 +503,8 @@ void Renderer::initializeResources()
 
         D3D12_SHADER_BYTECODE vsBytecode;
         D3D12_SHADER_BYTECODE psBytecode;
+        D3D12_SHADER_BYTECODE hsBytecode;
+        D3D12_SHADER_BYTECODE dsBytecode;
 
 #ifdef COMPILESHADERS
         vsBytecode.pShaderBytecode = vertexShader->GetBufferPointer();
@@ -488,6 +512,12 @@ void Renderer::initializeResources()
 
         psBytecode.pShaderBytecode = pixelShader->GetBufferPointer();
         psBytecode.BytecodeLength = pixelShader->GetBufferSize();
+
+        //hsBytecode.pShaderBytecode = hullShader->GetBufferPointer();
+        //hsBytecode.BytecodeLength = hullShader->GetBufferSize();
+
+        //dsBytecode.pShaderBytecode = domainShader->GetBufferPointer();
+        //dsBytecode.BytecodeLength = domainShader->GetBufferSize();
 #else
         vsBytecode.pShaderBytecode = vsBytecodeData.data();
         vsBytecode.BytecodeLength = vsBytecodeData.size();
@@ -498,9 +528,12 @@ void Renderer::initializeResources()
 
         psoDesc.VS = vsBytecode;
         psoDesc.PS = psBytecode;
+        //psoDesc.HS = hsBytecode;
+        //psoDesc.DS = dsBytecode;
 
         D3D12_RASTERIZER_DESC rasterDesc;
-        rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+        //rasterDesc.FillMode = D3D12_FILL_MODE_SOLID;
+        rasterDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
         rasterDesc.CullMode = D3D12_CULL_MODE_NONE;
         rasterDesc.FrontCounterClockwise = FALSE;
         rasterDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
@@ -561,6 +594,18 @@ void Renderer::initializeResources()
         {
             pixelShader->Release();
             pixelShader = nullptr;
+        }
+
+        if (hullShader)
+        {
+            hullShader->Release();
+            hullShader = nullptr;
+        }
+
+        if (domainShader)
+        {
+            domainShader->Release();
+            domainShader = nullptr;
         }
     }
 
@@ -805,6 +850,7 @@ void Renderer::setupCommands()
     // Record commands.
     const float clearColor[] = {0.2f, 0.2f, 0.2f, 1.0f};
     mCommandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    //mCommandList->IASetPrimitiveTopology(D3D12_PRIMITIVE_TOPOLOGY_T);
     mCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     mCommandList->IASetVertexBuffers(0, 1, &mVertexBufferView);
     mCommandList->IASetIndexBuffer(&mIndexBufferView);
@@ -951,8 +997,8 @@ void Renderer::render()
         mElapsedTime += 0.001f * time;
         mElapsedTime = fmodf(mElapsedTime, 6.283185307179586f);
 
-        uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, 0.001f * time,
-                                        vec3(0.0f, 1.0f, 0.0f));
+        //uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, 0.001f * time,
+        //                                vec3(0.0f, 1.0f, 0.0f));
 
         D3D12_RANGE readRange;
         readRange.Begin = 0;

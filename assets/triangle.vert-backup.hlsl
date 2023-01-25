@@ -28,12 +28,12 @@ void vert_main()
     gl_Position = mul(float4(inPos, 1.0f), mul(ubo_modelMatrix, mul(ubo_viewMatrix, ubo_projectionMatrix)));
 }
 
-Cross_Output main(Cross_Input stage_input)
+Cross_Output main(SCross_Input stage_input)
 {
     inColor = stage_input.inColor;
     inPos = stage_input.inPos;
     vert_main();
-    Cross_Output stage_output;
+    SCross_Output stage_output;
     stage_output.gl_Position = gl_Position;
     stage_output.outColor = outColor;
     return stage_output;

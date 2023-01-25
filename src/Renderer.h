@@ -99,7 +99,12 @@ class Renderer
     Vertex mVertexBufferData[3] = {{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
                                    {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
                                    {{0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+    //Vertex mVertexBufferData[4] = {{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    //                               {{-1.0f, -1.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    //                               {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+    //                               {{1.0f, 1.0f, 0.0f}, {0.5f, 0.0f, 0.0f}}};
 
+    //uint32_t mIndexBufferData[4] = {0, 1, 2, 3};
     uint32_t mIndexBufferData[3] = {0, 1, 2};
 
     std::chrono::time_point<std::chrono::steady_clock> tStart, tEnd;
