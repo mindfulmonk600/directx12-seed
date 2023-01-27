@@ -997,6 +997,7 @@ void Renderer::render()
         mElapsedTime += 0.001f * time;
         mElapsedTime = fmodf(mElapsedTime, 6.283185307179586f);
 
+        // Test comment to push.
         //uboVS.modelMatrix = glm::rotate(uboVS.modelMatrix, 0.001f * time,
         //                                vec3(0.0f, 1.0f, 0.0f));
 
